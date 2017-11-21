@@ -1,0 +1,14 @@
+{
+    "name": "flownative/neos-customdocumenturirouting",
+    "type": "neos-package",
+    "description": "This allows to have custom document URI paths for document nodes",
+    "license": "MIT",
+    "require": {
+        "neos/neos": "~3.0 || dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "Flownative\\Neos\\CustomDocumentUriRouting\\": "Classes"
+        }
+    }
+}

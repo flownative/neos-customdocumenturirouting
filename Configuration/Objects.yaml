@@ -1,0 +1,2 @@
+'Neos\Neos\Routing\FrontendNodeRoutePartHandlerInterface':
+  className: 'Flownative\Neos\CustomDocumentUriRouting\Routing\FrontendNodeRoutePartHandler'

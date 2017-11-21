@@ -1,0 +1,4 @@
+Flownative:
+  Neos:
+    CustomDocumentUriRouting:
+      uriPathPropertyName: 'uriPath'
