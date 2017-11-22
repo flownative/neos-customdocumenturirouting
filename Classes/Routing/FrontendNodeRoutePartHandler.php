@@ -25,7 +25,7 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
 {
     /**
      * A "hack" to read the value from the expected place, not this package.
-     * @Flow\InjectConfiguration(package="Neos\Neos", path="routing.supportEmptySegmentForDimensions")
+     * @Flow\InjectConfiguration(package="Neos.Neos", path="routing.supportEmptySegmentForDimensions")
      *
      * @var boolean
      */
