@@ -8,7 +8,6 @@
         inspector:
           group: 'document'
       validation:
-        'Neos.Neos/Validation/NotEmptyValidator': []
         'Neos.Neos/Validation/StringLengthValidator':
           minimum: 1
           maximum: 255
