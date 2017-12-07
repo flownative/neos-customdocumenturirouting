@@ -98,7 +98,7 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
 
         return trim($dimensionsUriSegment . $requestPath, '/') . $nodeContextPathSuffix;
     }
-    
+
     /**
      * Returns the initialized node that is referenced by $requestPath, based on the node's
      * "uriPathSegment" property.
@@ -115,42 +115,11 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
      */
     protected function convertRequestPathToNode($requestPath)
     {
-
         // Custom check if request path is a backend request and skip further matching.
         if ($requestPath === 'neos' || strpos($requestPath, 'neos/') === 0) {
-            throw new Exception\NoSuchNodeException(sprintf('No match possible because "%s" is a backend request path', $requestPath), 1346949857);
+            throw new Exception\NoSuchNodeException(sprintf('No match possible because "%s" is a backend request path', $requestPath), 1512649661);
         }
 
-        $contentContext = $this->buildContextFromRequestPath($requestPath);
-        $requestPathWithoutContext = $this->removeContextFromPath($requestPath);
-
-        $workspace = $contentContext->getWorkspace();
-        if ($workspace === null) {
-            throw new Exception\NoWorkspaceException(sprintf('No workspace found for request path "%s"', $requestPath), 1346949318);
-        }
-
-        $site = $contentContext->getCurrentSite();
-        if ($site === null) {
-            throw new Exception\NoSiteException(sprintf('No site found for request path "%s"', $requestPath), 1346949693);
-        }
-
-        $siteNode = $contentContext->getCurrentSiteNode();
-        if ($siteNode === null) {
-            $currentDomain = $contentContext->getCurrentDomain() ? 'Domain with hostname "' . $contentContext->getCurrentDomain()->getHostname() . '" matched.' : 'No specific domain matched.';
-            throw new Exception\NoSiteNodeException(sprintf('No site node found for request path "%s". %s', $requestPath, $currentDomain), 1346949728);
-        }
-
-        if ($requestPathWithoutContext === '') {
-            $node = $siteNode;
-        } else {
-            $relativeNodePath = $this->getRelativeNodePathByUriPathSegmentProperties($siteNode, $requestPathWithoutContext);
-            $node = ($relativeNodePath !== false) ? $siteNode->getNode($relativeNodePath) : null;
-        }
-
-        if (!$node instanceof NodeInterface) {
-            throw new Exception\NoSuchNodeException(sprintf('No node found on request path "%s"', $requestPath), 1346949857);
-        }
-
-        return $node;
+        return parent::convertRequestPathToNode($requestPath);
     }
 }
