@@ -16,6 +16,7 @@ use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Eel\FlowQuery\FlowQuery;
 use Neos\Flow\Annotations as Flow;
 use Neos\Neos\Domain\Service\SiteService;
+use Neos\Neos\Routing\Exception as Exception;
 use Neos\Neos\Routing\FrontendNodeRoutePartHandler as NeosFrontendNodeRoutePartHandler;
 
 /**
@@ -96,5 +97,29 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
         }
 
         return trim($dimensionsUriSegment . $requestPath, '/') . $nodeContextPathSuffix;
+    }
+
+    /**
+     * Returns the initialized node that is referenced by $requestPath, based on the node's
+     * "uriPathSegment" property.
+     *
+     * Note that $requestPath will be modified (passed by reference) by buildContextFromRequestPath().
+     *
+     * @param string $requestPath The request path, for example /the/node/path@some-workspace
+     * @return NodeInterface
+     * @throws \Neos\Neos\Routing\Exception\NoWorkspaceException
+     * @throws \Neos\Neos\Routing\Exception\NoSiteException
+     * @throws \Neos\Neos\Routing\Exception\NoSuchNodeException
+     * @throws \Neos\Neos\Routing\Exception\NoSiteNodeException
+     * @throws \Neos\Neos\Routing\Exception\InvalidRequestPathException
+     */
+    protected function convertRequestPathToNode($requestPath)
+    {
+        // Custom check if request path is a backend request and skip further matching.
+        if ($requestPath === 'neos' || strpos($requestPath, 'neos/') === 0) {
+            throw new Exception\NoSuchNodeException(sprintf('No match possible because "%s" is a backend request path', $requestPath), 1512649661);
+        }
+
+        return parent::convertRequestPathToNode($requestPath);
     }
 }
