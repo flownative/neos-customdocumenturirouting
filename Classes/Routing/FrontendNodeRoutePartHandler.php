@@ -126,7 +126,7 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
             throw new Exception\NoSuchNodeException(sprintf('No match possible because "%s" is a backend request path', $requestPath), 1512649661);
         }
 
-        //check for exclude patterns and skip further matching
+        // Check for exclude patterns and skip further matching
         foreach ($this->matchExcludePatterns as $exclude) {
             if (strpos($requestPath, $exclude) === 0) {
                 throw new Exception\NoSuchNodeException(sprintf('Request paths starting with "%s" are excluded for path matching - path: %s', $exclude, $requestPath), 1515959518);
