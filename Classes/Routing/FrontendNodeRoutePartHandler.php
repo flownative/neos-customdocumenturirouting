@@ -39,6 +39,12 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
     protected $uriPathPropertyName;
 
     /**
+     * @Flow\InjectConfiguration(path="matchExcludePatterns")
+     * @var array
+     */
+    protected $matchExcludePatterns;
+
+    /**
      * Builds a node path which matches the given request path.
      *
      * This method loos for nodes with the configured uriPathPropertyName property having a matching value.
@@ -118,6 +124,13 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
         // Custom check if request path is a backend request and skip further matching.
         if ($requestPath === 'neos' || strpos($requestPath, 'neos/') === 0) {
             throw new Exception\NoSuchNodeException(sprintf('No match possible because "%s" is a backend request path', $requestPath), 1512649661);
+        }
+
+        // Check for exclude patterns and skip further matching
+        foreach ($this->matchExcludePatterns as $exclude) {
+            if (strpos($requestPath, $exclude) === 0) {
+                throw new Exception\NoSuchNodeException(sprintf('Request paths starting with "%s" are excluded for path matching - path: %s', $exclude, $requestPath), 1515959518);
+            }
         }
 
         return parent::convertRequestPathToNode($requestPath);

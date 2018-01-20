@@ -2,3 +2,5 @@ Flownative:
   Neos:
     CustomDocumentUriRouting:
       uriPathPropertyName: 'uriPath'
+      matchExcludePatterns:
+        - '_Resources'
