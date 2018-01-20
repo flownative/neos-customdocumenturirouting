@@ -22,6 +22,19 @@ The used property can be changed in the settings, if you like to use a different
         CustomDocumentUriRouting:
           uriPathPropertyName: 'myCustomUriPathProperty'
 
+### Excluding paths from matching
+
+In order to exclude specific request paths (e.g. public resources), the `matchExcludePatterns`
+setting exists. All given array values will skip the matching process for request paths that start
+with the value. The default shipped with the package is:
+
+    Neos:
+      CustomDocumentUriRouting:
+        matchExcludePatterns:
+          - '_Resources'
+
+Any URI starting with `_Resources` will be ignored by the package and passed through.
+
 ## Credits
 
 Development of this package has been sponsored by web&co OG, Vienna, Austria.
