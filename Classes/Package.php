@@ -32,21 +32,28 @@ class Package extends BasePackage
     {
         $dispatcher = $bootstrap->getSignalSlotDispatcher();
 
-        $dispatcher->connect(Node::class, 'nodePropertyChanged', function (NodeInterface $node, $propertyName) use ($bootstrap) {
-            /** @var string $uriPathPropertyName */
-            $uriPathPropertyName = $bootstrap->getObjectManager()->get(ConfigurationManager::class)->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Flownative.Neos.CustomDocumentUriRouting.uriPathPropertyName');
+        $dispatcher->connect(Node::class, 'nodePropertyChanged', function (NodeInterface $node, $propertyName, $oldValue, $newValue) use ($bootstrap) {
+            if (!$node->getNodeType()->isOfType('Neos.Neos:Document')) {
+                return;
+            }
 
-            if ($propertyName === $uriPathPropertyName && !empty($node->getProperty($propertyName)) && $node->getNodeType()->isOfType('Neos.Neos:Document')) {
+            $uriPathPropertyName = $bootstrap->getObjectManager()->get(ConfigurationManager::class)->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Flownative.Neos.CustomDocumentUriRouting.uriPathPropertyName');
+            if ($propertyName !== $uriPathPropertyName) {
+                return;
+            }
+
+            if (!empty($newValue)) {
                 $q = new FlowQuery([$node->getContext()->getCurrentSiteNode()]);
                 $q = $q->context(['invisibleContentShown' => true, 'removedContentShown' => true, 'inaccessibleContentShown' => true]);
 
-                $possibleUriPath = $initialUriPath = $node->getProperty($propertyName);
+                $possibleUriPath = $initialUriPath = $newValue;
                 $i = 1;
                 while ($q->find(sprintf('[instanceof Neos.Neos:Document][%s="%s"]', $propertyName, $possibleUriPath))->count() > 0) {
                     $possibleUriPath = $initialUriPath . '-' . $i++;
                 }
                 $node->setProperty($propertyName, $possibleUriPath);
             }
+
             $bootstrap->getObjectManager()->get(RouteCacheFlusher::class)->registerNodeChange($node);
         });
     }
