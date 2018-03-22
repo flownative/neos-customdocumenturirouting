@@ -42,15 +42,17 @@ class Package extends BasePackage
                 return;
             }
 
-            $q = new FlowQuery([$node->getContext()->getCurrentSiteNode()]);
-            $q = $q->context(['invisibleContentShown' => true, 'removedContentShown' => true, 'inaccessibleContentShown' => true]);
+            if (!empty($newValue)) {
+                $q = new FlowQuery([$node->getContext()->getCurrentSiteNode()]);
+                $q = $q->context(['invisibleContentShown' => true, 'removedContentShown' => true, 'inaccessibleContentShown' => true]);
 
-            $possibleUriPath = $initialUriPath = $newValue;
-            $i = 1;
-            while ($q->find(sprintf('[instanceof Neos.Neos:Document][%s="%s"]', $propertyName, $possibleUriPath))->count() > 0) {
-                $possibleUriPath = $initialUriPath . '-' . $i++;
+                $possibleUriPath = $initialUriPath = $newValue;
+                $i = 1;
+                while ($q->find(sprintf('[instanceof Neos.Neos:Document][%s="%s"]', $propertyName, $possibleUriPath))->count() > 0) {
+                    $possibleUriPath = $initialUriPath . '-' . $i++;
+                }
+                $node->setProperty($propertyName, $possibleUriPath);
             }
-            $node->setProperty($propertyName, $possibleUriPath);
 
             $bootstrap->getObjectManager()->get(RouteCacheFlusher::class)->registerNodeChange($node);
         });
