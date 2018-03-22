@@ -13,11 +13,13 @@ namespace Flownative\Neos\CustomDocumentUriRouting;
 
 use Neos\ContentRepository\Domain\Model\Node;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Eel\FlowQuery\FlowQuery;
 use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Package\Package as BasePackage;
 use Neos\Neos\Routing\Cache\RouteCacheFlusher;
+use Neos\Neos\Routing\FrontendNodeRoutePartHandlerInterface;
 
 /**
  * The Package class, wiring signal/slot during boot.
@@ -43,17 +45,20 @@ class Package extends BasePackage
             }
 
             if (!empty($newValue)) {
-                $q = new FlowQuery([$node->getContext()->getCurrentSiteNode()]);
-                $q = $q->context(['invisibleContentShown' => true, 'removedContentShown' => true, 'inaccessibleContentShown' => true]);
+                $frontendNodeRoutePartHandler = $bootstrap->getObjectManager()->get(FrontendNodeRoutePartHandlerInterface::class);
+                $frontendNodeRoutePartHandler->setName('node');
 
                 $possibleUriPath = $initialUriPath = $newValue;
                 $i = 1;
-                while ($q->find(sprintf('[instanceof Neos.Neos:Document][%s="%s"]', $propertyName, $possibleUriPath))->count() > 0) {
+                while ($frontendNodeRoutePartHandler->match($possibleUriPath)) {
+                    $nodePathAndContext = NodePaths::explodeContextPath($frontendNodeRoutePartHandler->getValue());
+                    if ($nodePathAndContext['nodePath'] === $node->getPath()) {
+                        break;
+                    }
                     $possibleUriPath = $initialUriPath . '-' . $i++;
                 }
                 $node->setProperty($propertyName, $possibleUriPath);
             }
-
             $bootstrap->getObjectManager()->get(RouteCacheFlusher::class)->registerNodeChange($node);
         });
     }
