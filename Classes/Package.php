@@ -38,7 +38,7 @@ class Package extends BasePackage
             }
 
             $uriPathPropertyName = $bootstrap->getObjectManager()->get(ConfigurationManager::class)->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, 'Flownative.Neos.CustomDocumentUriRouting.uriPathPropertyName');
-            if ($propertyName !== $uriPathPropertyName || empty($newValue)) {
+            if ($propertyName !== $uriPathPropertyName) {
                 return;
             }
 
