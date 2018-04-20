@@ -24,6 +24,7 @@ use Neos\Neos\Routing\FrontendNodeRoutePartHandler as NeosFrontendNodeRoutePartH
  */
 class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
 {
+
     /**
      * A "hack" to read the value from the expected place, not this package.
      * @Flow\InjectConfiguration(package="Neos.Neos", path="routing.supportEmptySegmentForDimensions")
@@ -31,6 +32,12 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
      * @var boolean
      */
     protected $supportEmptySegmentForDimensions;
+
+    /**
+     * @Flow\InjectConfiguration(path="mixinNodeTypeName")
+     * @var string
+     */
+    protected $mixinNodeTypeName;
 
     /**
      * @Flow\InjectConfiguration(path="uriPathPropertyName")
@@ -61,7 +68,8 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
         $q = new FlowQuery([$siteNode]);
         $foundNode = $q->find(
             sprintf(
-                '[instanceof Neos.Neos:Document][%s="%s"]',
+                '[instanceof %s][%s="%s"]',
+                $this->mixinNodeTypeName,
                 $this->uriPathPropertyName,
                 $relativeRequestPath)
         )->get(0);

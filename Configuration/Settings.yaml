@@ -1,6 +1,7 @@
 Flownative:
   Neos:
     CustomDocumentUriRouting:
+      mixinNodeTypeName: 'Flownative.Neos.CustomDocumentUriRouting:UriPathMixin'
       uriPathPropertyName: 'uriPath'
       matchExcludePatterns:
         - '_Resources'

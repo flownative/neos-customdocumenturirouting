@@ -15,12 +15,16 @@ After installing the package, by default it looks for a property called `uriPath
 The `uriPath` property can be added to your document nodes by using the provided
 `Flownative.Neos.CustomDocumentUriRouting:UriPathMixin`. 
 
-The used property can be changed in the settings, if you like to use a different name:
+The used mixin node type name and property name can be changed in the settings, if you like to use a different name:
 
     Flownative:
       Neos:
         CustomDocumentUriRouting:
+          mixinNodeTypeName: 'Acme.Product:UriPathMixin'
           uriPathPropertyName: 'myCustomUriPathProperty'
+
+Make sure that, if you configure a custom mixin node type name, that node type actually provides a property with the
+name you defined in `uriPathPropertyName`.
 
 ### Excluding paths from matching
 
@@ -34,6 +38,18 @@ with the value. The default shipped with the package is:
           - '_Resources'
 
 Any URI starting with `_Resources` will be ignored by the package and passed through.
+
+### A note about performance
+
+This package provides a custom node route part handler which will check if the current HTTP request
+matches a given uri path. The route part handler uses a Flow Query to do that. If the Flow Query finds too
+many nodes, because the criteria is too broad, frontend and backend performance can suffer, especially
+if your content repository contains thousands of nodes.
+
+Therefore try to limit possible matches to a minimum: only use the configured mixin in those node types
+which actually need them. For example, if you have a custom "Landing Page" node type, you may want to
+define the `CustomDocumentUriRoutingMixin` as a super type. But what you won't do is assign that mixin
+to the `Neos.Neos:Document` node type - because that would match all possible document nodes in the system.
 
 ## Credits
 
