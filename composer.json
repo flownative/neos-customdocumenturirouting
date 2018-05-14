@@ -4,7 +4,7 @@
     "description": "This allows to have custom document URI paths for document nodes",
     "license": "MIT",
     "require": {
-        "neos/neos": "~3.0 || dev-master"
+        "neos/neos": "^3.0 || ^4.0"
     },
     "autoload": {
         "psr-4": {
