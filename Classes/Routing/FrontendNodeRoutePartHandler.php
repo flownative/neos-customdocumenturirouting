@@ -60,8 +60,8 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
      *
      * @param NodeInterface $siteNode The site node, used as a starting point while traversing the tree
      * @param string $relativeRequestPath The request path, relative to the site's root path
-     * @throws \Neos\Neos\Routing\Exception\NoSuchNodeException
      * @return string
+     * @throws \Neos\Eel\Exception
      */
     protected function getRelativeNodePathByUriPathSegmentProperties(NodeInterface $siteNode, $relativeRequestPath)
     {
@@ -78,7 +78,34 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
             return NodePaths::getRelativePathBetween($siteNode->getPath(), $foundNode->getPath());
         }
 
-        return parent::getRelativeNodePathByUriPathSegmentProperties($siteNode, $relativeRequestPath);
+        // Hotfix for performance issue in original Neos route part handler: if a given node contains thousands of
+        // child nodes, the original implementation would load all these nodes into memory in order to compare the
+        // current path segment with $node->getProperty('uriPathSegment').
+        //
+        // When the issue is fixed in Neos core, the following code can be removed by a parent::… call.
+        $relativeNodePathSegments = [];
+        $node = $siteNode;
+
+        foreach (explode('/', $relativeRequestPath) as $pathSegment) {
+            $foundNodeInThisSegment = false;
+
+            $possibleNodes = $this->nodeDataRepository->findByProperties(['uriPathSegment' => $pathSegment], 'Neos.Neos:Document', $siteNode->getWorkspace(), $siteNode->getDimensions(), $node->getPath());
+            foreach ($possibleNodes as $possibleNode) {
+                /** @var NodeData $possibleNode */
+                if ($possibleNode->getParentPath() === $node->getPath()) {
+                    $relativeNodePathSegments[] = $possibleNode->getName();
+                    $node = $possibleNode;
+                    $foundNodeInThisSegment = true;
+                    break;
+                }
+            }
+
+            if (!$foundNodeInThisSegment) {
+                return false;
+            }
+        }
+
+        return implode('/', $relativeNodePathSegments);
     }
 
     /**
