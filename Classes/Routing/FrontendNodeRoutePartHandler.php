@@ -11,7 +11,9 @@ namespace Flownative\Neos\CustomDocumentUriRouting\Routing;
  * source code.
  */
 
+use Neos\ContentRepository\Domain\Model\NodeData;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Eel\FlowQuery\FlowQuery;
 use Neos\Flow\Annotations as Flow;
@@ -50,6 +52,12 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
      * @var array
      */
     protected $matchExcludePatterns;
+
+    /**
+     * @Flow\Inject
+     * @var NodeDataRepository
+     */
+    protected $nodeDataRepository;
 
     /**
      * Builds a node path which matches the given request path.
