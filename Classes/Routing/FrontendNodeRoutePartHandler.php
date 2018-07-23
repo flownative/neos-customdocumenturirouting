@@ -81,6 +81,7 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
      * @return string
      * @throws \Neos\Eel\Exception
      * @throws \Doctrine\DBAL\DBALException
+     * @throws Exception\NoSuchNodeException
      */
     protected function getRelativeNodePathByUriPathSegmentProperties(NodeInterface $siteNode, $relativeRequestPath)
     {
@@ -102,6 +103,19 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
         // current path segment with $node->getProperty('uriPathSegment').
         //
         // When the issue is fixed in Neos core, the following code can be removed by a parent::… call.
+
+        // The DBAL implementation does not support multiple dimensions yet, therefore fall back to original implementation:
+        $dimensionPresets = $this->contentDimensionPresetSource->getAllPresets();
+        if (count($dimensionPresets) > 1) {
+            return parent::getRelativeNodePathByUriPathSegmentProperties($siteNode, $relativeRequestPath);
+        }
+        if (count($dimensionPresets) === 1) {
+            $firstPreset = reset($dimensionPresets);
+            if (count($firstPreset['presets']) > 1) {
+                return parent::getRelativeNodePathByUriPathSegmentProperties($siteNode, $relativeRequestPath);
+            }
+        }
+
         $relativeNodePathSegments = [];
         $currentNodeRecord = [
             'path' => $siteNode->getPath()
