@@ -11,6 +11,9 @@ namespace Flownative\Neos\CustomDocumentUriRouting\Routing;
  * source code.
  */
 
+use Doctrine\Common\Persistence\ObjectManager;
+use Doctrine\DBAL\FetchMode;
+use Doctrine\ORM\EntityManagerInterface;
 use Neos\ContentRepository\Domain\Model\NodeData;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
@@ -60,16 +63,25 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
     protected $nodeDataRepository;
 
     /**
+     * @Flow\Inject
+     * @var EntityManagerInterface
+     */
+    protected $entityManager;
+
+    /**
      * Builds a node path which matches the given request path.
      *
-     * This method loos for nodes with the configured uriPathPropertyName property having a matching value.
+     * This method looks for nodes with the configured uriPathPropertyName property having a matching value.
      *
      * If no node is found that way, it asks the parent method to resolve the node path as usual.
+     * ☝️ Note: due to the hot fix (see below), the parent method is currently not called
      *
      * @param NodeInterface $siteNode The site node, used as a starting point while traversing the tree
      * @param string $relativeRequestPath The request path, relative to the site's root path
      * @return string
      * @throws \Neos\Eel\Exception
+     * @throws \Doctrine\DBAL\DBALException
+     * @throws Exception\NoSuchNodeException
      */
     protected function getRelativeNodePathByUriPathSegmentProperties(NodeInterface $siteNode, $relativeRequestPath)
     {
@@ -86,23 +98,45 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
             return NodePaths::getRelativePathBetween($siteNode->getPath(), $foundNode->getPath());
         }
 
-        // Hotfix for performance issue in original Neos route part handler: if a given node contains thousands of
+        // Hot fix for performance issue in original Neos route part handler: if a given node contains thousands of
         // child nodes, the original implementation would load all these nodes into memory in order to compare the
         // current path segment with $node->getProperty('uriPathSegment').
         //
         // When the issue is fixed in Neos core, the following code can be removed by a parent::… call.
+
+        // The DBAL implementation does not support multiple dimensions yet, therefore fall back to original implementation:
+        $dimensionPresets = $this->contentDimensionPresetSource->getAllPresets();
+        if (count($dimensionPresets) > 1) {
+            return parent::getRelativeNodePathByUriPathSegmentProperties($siteNode, $relativeRequestPath);
+        }
+        if (count($dimensionPresets) === 1) {
+            $firstPreset = reset($dimensionPresets);
+            if (count($firstPreset['presets']) > 1) {
+                return parent::getRelativeNodePathByUriPathSegmentProperties($siteNode, $relativeRequestPath);
+            }
+        }
+
         $relativeNodePathSegments = [];
-        $node = $siteNode;
+        $currentNodeRecord = [
+            'path' => $siteNode->getPath()
+        ];
+
+        $connection = $this->entityManager->getConnection();
 
         foreach (explode('/', $relativeRequestPath) as $pathSegment) {
             $foundNodeInThisSegment = false;
+            $statement = $connection->query("
+              SELECT path, parentPath
+              FROM neos_contentrepository_domain_model_nodedata AS nodedata
+              WHERE LOWER(CAST(nodedata.properties AS CHAR)) LIKE '%\"uripathsegment\": \"$pathSegment\"%'
+              AND nodedata.parentpathhash = '" . md5($currentNodeRecord['path']) . "'
+              AND workspace = \"" . $siteNode->getWorkspace()->getName() . "\"
+            ");
 
-            $possibleNodes = $this->nodeDataRepository->findByProperties(['uriPathSegment' => $pathSegment], 'Neos.Neos:Document', $siteNode->getWorkspace(), $siteNode->getDimensions(), $node->getPath());
-            foreach ($possibleNodes as $possibleNode) {
-                /** @var NodeData $possibleNode */
-                if ($possibleNode->getParentPath() === $node->getPath()) {
-                    $relativeNodePathSegments[] = $possibleNode->getName();
-                    $node = $possibleNode;
+            foreach ($statement->fetchAll(FetchMode::ASSOCIATIVE) as $possibleNodeRecord) {
+                if ($possibleNodeRecord['parentPath'] === $currentNodeRecord['path']) {
+                    $currentNodeRecord = $possibleNodeRecord;
+                    $relativeNodePathSegments[] = substr($currentNodeRecord['path'], (strrpos($currentNodeRecord['path'], '/') + 1));
                     $foundNodeInThisSegment = true;
                     break;
                 }
