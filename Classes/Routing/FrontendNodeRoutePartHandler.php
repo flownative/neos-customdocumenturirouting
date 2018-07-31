@@ -11,11 +11,10 @@ namespace Flownative\Neos\CustomDocumentUriRouting\Routing;
  * source code.
  */
 
-use Doctrine\Common\Persistence\ObjectManager;
 use Doctrine\DBAL\FetchMode;
 use Doctrine\ORM\EntityManagerInterface;
-use Neos\ContentRepository\Domain\Model\NodeData;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Eel\FlowQuery\FlowQuery;
@@ -123,28 +122,37 @@ class FrontendNodeRoutePartHandler extends NeosFrontendNodeRoutePartHandler
 
         $connection = $this->entityManager->getConnection();
 
-        foreach (explode('/', $relativeRequestPath) as $pathSegment) {
-            $foundNodeInThisSegment = false;
-            $statement = $connection->query("
+        $queryTemplate = "
               SELECT path, parentPath
               FROM neos_contentrepository_domain_model_nodedata AS nodedata
-              WHERE LOWER(CAST(nodedata.properties AS CHAR)) LIKE '%\"uripathsegment\": \"$pathSegment\"%'
-              AND nodedata.parentpathhash = '" . md5($currentNodeRecord['path']) . "'
-              AND workspace = \"" . $siteNode->getWorkspace()->getName() . "\"
-            ");
+              WHERE LOWER(CAST(nodedata.properties AS CHAR)) LIKE '%s'
+              AND nodedata.parentpathhash = '%s'
+              AND workspace IN (%s)
+              ORDER BY FIELD(workspace, %s) ASC
+              LIMIT 1
+        ";
+        $workspaceNames = [$siteNode->getContext()->getWorkspace()->getName()];
+        $baseWorkspaces = $siteNode->getContext()->getWorkspace()->getBaseWorkspaces();
+        array_walk($baseWorkspaces, function (Workspace $workspace) use (&$workspaceNames) {
+            $workspaceNames[] = $workspace->getName();
+        });
 
-            foreach ($statement->fetchAll(FetchMode::ASSOCIATIVE) as $possibleNodeRecord) {
-                if ($possibleNodeRecord['parentPath'] === $currentNodeRecord['path']) {
-                    $currentNodeRecord = $possibleNodeRecord;
-                    $relativeNodePathSegments[] = substr($currentNodeRecord['path'], (strrpos($currentNodeRecord['path'], '/') + 1));
-                    $foundNodeInThisSegment = true;
-                    break;
-                }
-            }
+        foreach (explode('/', $relativeRequestPath) as $pathSegment) {
+            $statement = $connection->query(sprintf(
+                $queryTemplate,
+                "%\"uripathsegment\": \"$pathSegment\"%",
+                md5($currentNodeRecord['path']),
+                "'" . implode("','", $workspaceNames) . "'",
+                "'" . implode("','", $workspaceNames) . "'"
+            ));
 
-            if (!$foundNodeInThisSegment) {
+            $fetchResult = $statement->fetch(FetchMode::ASSOCIATIVE);
+            if ($fetchResult === false) {
                 return false;
             }
+
+            $currentNodeRecord = $fetchResult;
+            $relativeNodePathSegments[] = substr($currentNodeRecord['path'], (strrpos($currentNodeRecord['path'], '/') + 1));
         }
 
         return implode('/', $relativeNodePathSegments);
